@@ -219,7 +219,6 @@ The code above is sketched rather than shipped. It comes out of a working tool t
 Prior work:
 
 - [Pentestmonkey, Informix SQL Injection Cheat Sheet](https://pentestmonkey.net/cheat-sheet/sql-injection/informix-sql-injection-cheat-sheet) — tabulated syntax, tested against 11.5
-- [F-Secure Labs, Uncommon SQL Database Alert: Informix SQL Injection (2019)](https://labs.withsecure.com/publications/uncommon-sql-database-alert-informix-sql-injection) — blind boolean in Cisco UCM, documents sqlmap's enumeration failures
 - [Shea Security, Building a proof of concept for blind SQL Injections (2022)](https://sheasecurity.com.au/2022/12/22/ibm-informix-building-a-proof-of-concept-for-blind-sql-injections/) — catalog tables, comment forms, working extraction script
 - [SpiderLabs, The Case of an Obscure Injection (2013)](https://www.levelblue.com/blogs/spiderlabs-blog/the-case-of-an-obscure-injection) — injection inside a FIRST clause with `--` filtered
 - [sqlmap time-based payloads](https://github.com/sqlmapproject/sqlmap/blob/master/data/xml/payloads/time_blind.xml) — Informix heavy-query payload using `sysmaster:syspaghdr`
@@ -231,4 +230,3 @@ Vendor documentation:
 - [DBINFO 'version' option parameters](https://help.hcl-software.com/hclinformix/1410/sqs/ids_sqs_1491.html)
 - [SQL comment indicators](https://help.hcl-software.com/hclinformix/15.0/sqs/ids_sqs_0209.html)
 - [System-Monitoring Interface tables](https://help.hcl-software.com/hclinformix/1410/adr/ids_adr_0210.html)
-- [Substring functions and column subscript notation](https://4js.com/online_documentation/fjs-fgl-4.01.34-manual-html/fgl-topics/c_fgl_odiagntz_023.html)
