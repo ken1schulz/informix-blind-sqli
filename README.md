@@ -1,5 +1,7 @@
 # Blind SQL Injection Against Informix: Validating the Oracle
 
+Ken Schulz, September 2026
+
 Informix injection has been documented before. Pentestmonkey tabulated the syntax, F-Secure worked through a blind boolean case in Cisco UCM, and Shea Security published a proof of concept with a working extraction script. What none of them address is whether the oracle is real.
 
 All of that work takes a boolean differential at face value: two inputs produce two different pages, therefore the database is evaluating the injected expression. That inference is usually right and occasionally wrong, and when it is wrong the tooling reports a vulnerability that does not exist.
@@ -95,11 +97,17 @@ For anything past a yes or no signal, string handling matters. Informix provides
 
 ### The equals operator question
 
-Shea Security reports that string comparisons cannot be carried out with the equals operator in Informix, which is why that post and the F-Secure one both route everything through `ASCII()` and `SUBSTRING()`.
+Shea Security reports that string comparisons cannot be carried out with the equals operator in Informix, citing the F-Secure post as the source. That is worth a closer look, because F-Secure's own payloads use string equality and it works:
 
-That is probably narrower than it sounds. Fixed-length CHAR columns pad with trailing spaces, so a comparison against an unpadded literal fails even when the visible content matches. Shea noticed exactly this, describing strings in their environment as ending in a space. If padding is the cause, `=` should work on VARCHAR and on the output of `SUBSTR`, and fail only on raw CHAR column comparisons.
+```
+1=1 AND (SELECT ncols FROM systables WHERE tabname = 'empire') = 4
+```
 
-That remains a hypothesis rather than a result. If it holds, the fix is trivial: compare against a padded literal, or wrap the column in `TRIM()`. Worth confirming on a target before assuming `ASCII()` is mandatory.
+That is `=` against a CHAR column in `systables`, and integer equality appears throughout their enumeration too. SpiderLabs hit an equals problem in a separate case, but describes the application throwing the error rather than the database.
+
+So there are three reports and no evidence the engine is the cause in any of them. Two explanations are more likely than an engine limitation. The first is application-layer filtering, which is what SpiderLabs describes and is common enough on older enterprise software. The second is CHAR padding: fixed-length columns pad with trailing spaces, so a comparison against an unpadded literal fails even when the visible content matches. Shea noticed exactly this, describing strings in their environment as ending in a space.
+
+Neither has been confirmed as the cause here, but both are cheap to check. If padding is the problem, compare against a padded literal or wrap the column in `TRIM()`. If the application is filtering, encoding the operator or using an alternate comparison gets through. Worth establishing which before assuming `ASCII()` is mandatory.
 
 Direct comparison on a substring result is simple and avoids a function dependency:
 
@@ -113,7 +121,7 @@ The subscript form does the same thing more compactly:
 ' AND (SELECT FIRST 1 DBINFO('dbname') FROM systables)[1,1] = 'a' --
 ```
 
-The `ASCII()` route, confirmed working by prior work, supports binary search over the character code:
+The `ASCII()` route, well established by the prior work, supports binary search over the character code:
 
 ```
 ' AND ASCII(SUBSTRING(username FROM 1 FOR 1)) > 109 --
@@ -214,11 +222,16 @@ None of this is complicated once the pieces are laid out, but the ordering matte
 
 The code above is sketched rather than shipped. It comes out of a working tool that is not published, and the fragments are meant to show the shape of the checks rather than to be dropped into anything. Shea Security's post has a complete extraction loop if you want something runnable.
 
+## About
+
+Written by Ken Schulz. [LinkedIn](https://www.linkedin.com/in/kenschulz1/) | [GitHub](https://github.com/ken1schulz)
+
 ## References
 
 Prior work:
 
 - [Pentestmonkey, Informix SQL Injection Cheat Sheet](https://pentestmonkey.net/cheat-sheet/sql-injection/informix-sql-injection-cheat-sheet) — tabulated syntax, tested against 11.5
+- Ken Gannon, F-Secure Labs, "Uncommon SQL Database Alert: Informix SQL Injection" (November 2019) — blind boolean in Cisco UCM, documents sqlmap's enumeration failures. Scripts at [FSecureLABS/Cisco-UCM-SQLi-Scripts](https://github.com/FSecureLABS/Cisco-UCM-SQLi-Scripts)
 - [Shea Security, Building a proof of concept for blind SQL Injections (2022)](https://sheasecurity.com.au/2022/12/22/ibm-informix-building-a-proof-of-concept-for-blind-sql-injections/) — catalog tables, comment forms, working extraction script
 - [SpiderLabs, The Case of an Obscure Injection (2013)](https://www.levelblue.com/blogs/spiderlabs-blog/the-case-of-an-obscure-injection) — injection inside a FIRST clause with `--` filtered
 - [sqlmap time-based payloads](https://github.com/sqlmapproject/sqlmap/blob/master/data/xml/payloads/time_blind.xml) — Informix heavy-query payload using `sysmaster:syspaghdr`
